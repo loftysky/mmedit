@@ -1,0 +1,87 @@
+  
+End Goals
+=========
+
+We want to be able to:
+
+- Organize/search through footage, while maintaining original structure.
+    - Record where everything is.
+    - Make proxies/offline/etc. for Shotgun/editorial/etc..
+- Make EDLs/bins from Cuts/Playlists.
+- Make Cuts/Playlists from EDLs/bins.
+- Track progression through pipeline, so editorial can have automatic
+  updates to their footage.
+
+      
+General Idea
+============
+
+1. Footage gets manually copied into wherever (perhaps a "Source1" volume on QNAP)::
+
+  /Volumes/Source1/
+    Projects/
+      XXX/
+        $card1/
+        $card2/
+          whatever_001.mov
+    
+2. The entire card is represented by a Delivery on Shotgun, with each piece of footage
+   being a Element within. Will need to (potentially) deal with multiple paths for
+   each bit of footage, as long clips get split up. 
+   Elements have UUIDs (or some random token).
+
+3. Later, create a lightweight version of the import in which the footage names contain
+   a part of the element UUID so that we can track footage through the
+   editorial pipeline. Import this into the NLE instead of the real footage.
+
+
+New Shotgun Entities
+====================
+
+$ElementSet (CustomEntity27)
+--------
+- This is the entire group of footage being imported. Fields include:
+  - code = os.path.splitext(os.path.basename(path))[0]
+  - path
+  - type = "footage"
+
+Element
+-------
+- Points to the individual clip within a $ElementSet. This may be represented
+  on disk by multiple files, so unless there is something really wacky, we
+  will include only the path to the first file/frame.
+x Attach to "Slate" (if they exist).
+- Publish an offline/proxy. Maybe add some source field to Publish
+  that tracks the relationship.
+- Promote that publish into a version.
+- Fields:
+  - code: os.path.splitext(os.path.basename(path))[0]
+  - sg_uuid (random for all, via `str(uuid.uuid4())`)
+  - sg_type: "footage"
+  - sg_element_set: its parent ElementSet
+  - sg_path: absolute path to the (first file of) footage.
+  - sg_relative_path: path within ElementSet.path. Mainly for safety incase
+    the ElementSet is moved. `os.path.relpath(path, parent_path)`
+  ~ sg_metadata: JSON of whatever. We won't put anything in it to start with,
+    but it is there for if/when editors need something. At that point we can
+    update all existing footage.
+
+
+First Steps
+===========
+
+## `mm-ingest-footage [--dry-run] [--name NAME ] FOOTAGE_DIRECTORY`
+
+- Walk the directory looking for things we understand as footage.
+  - What types of footage do we accept? Gotta see what Kevin has and/or ask.
+- Make a "Delivery" for the whole thing.
+- Make an "Element" for each thing found.
+    - Do we include metadata files?
+    - What formats are we dealing with?
+- Schedule the farm to create an offline proxy. It should
+  publish the proxy (as "footage_proxy"?), and create a Version.
+  It is unclear if the sg_path_to_movie on that Version should
+  be the original or the proxy. This is the sort of thing that
+  makes me want to revisit the Publish/Version dependency chain, so that
+  the dependency links can describe their relationship.
+  

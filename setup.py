@@ -16,7 +16,7 @@ setup(
     entry_points={
         'console_scripts': '''
 
-            # TODO: Scripts.
+            mmedit-ingest-footage = mmedit.footage.ingest:main
 
         ''',
     },

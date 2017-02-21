@@ -1,0 +1,35 @@
+
+- Determine what types of footage we might have, and how it is arranged:
+    - Something DJI, looks like DCIM/100MEDIA/DJI_0126.MP4
+    - Blackmagic something:
+        CAM1-URSA/Blackmagic URSA_1_2016-04-08_1453_C0000.mov
+    - Sony A7 via recorder (prores 4:2:2):
+        A7S/A7S-CARD2/SHOGUN_S003_S001_T002.MOV
+    - Sony older something something:
+        *.MTS
+    - Sony XDCam
+        XDROOT/Clip/DEC.4-ANNA0540.MXF
+        XDROOT/Clip/DEC.4-ANNA0540M01.XML
+        XDROOT/Clip/DEC.4-ANNA0540R01.BIM
+    - arbitrary files:
+        *.mov
+        *.mp4
+        *.jp[e]g (??)
+        *.mxf
+        *.avi
+
+- Determine if we can use symlinks in our re-organized tree, or if we
+  have to use hardlinks or simply rename everything.
+  - What software needs to deal with the raw files, and can it deal with symlinks
+    √ Adobe Premiere (seems ok for: source import, EDL export).
+    x Adobe After Effects (resolves symlinks on import).
+    - Avid Media Composer?
+    - Foundry Nuke Studio?
+    - Blackmagic DaVinci Resolve?
+    - Blackmagic Fusion?
+
+
+Overall plan
+------------
+- CLI: `mmedit-ingest-footage [--name NAME] [--yes] /path/to/directory`
+- GUI: Uses the same functions that the CLI does, but is gooey.
