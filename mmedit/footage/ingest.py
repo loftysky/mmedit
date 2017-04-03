@@ -1,16 +1,10 @@
-#!/usr/bin/env python
-
 from __future__ import print_function 
 
-import argparse
-import errno
-import hashlib
 import os
 import re
 import uuid
 
 from sgfs import SGFS
-from sgpublish import Publisher
 
 
 EXT_TO_TYPE = {
@@ -89,6 +83,8 @@ def guess_type(path):
 
 
 def main():
+
+    import argparse
 
     parser = argparse.ArgumentParser()
 

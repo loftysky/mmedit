@@ -17,6 +17,7 @@ setup(
         'console_scripts': '''
 
             mmedit-ingest = mmedit.footage.ingest:main
+            mmedit-relink = mmedit.footage.relink:main
 
         ''',
     },
