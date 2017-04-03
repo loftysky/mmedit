@@ -2,11 +2,20 @@ from __future__ import print_function
 
 import errno
 import os
+import re
 
 from sgfs import SGFS
 
 
-def relink(elements, dst_root, use_symlinks=True, dry_run=False, verbose=False):
+REDUCTIONS = (
+    (r'/xdroot/', '/'),
+    (r'/clip/', '/'),
+    (r'/dcim/\d+\w*/', '/'),
+    (r'/dcim/', '/'),
+)
+
+
+def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, dry_run=False, verbose=False):
     """Create a heirarchy from a set of Elements that symlink to the originals."""
 
     dst_root = os.path.abspath(dst_root)
@@ -25,7 +34,13 @@ def relink(elements, dst_root, use_symlinks=True, dry_run=False, verbose=False):
 
     for element in elements:
 
-        dir_, file_name = os.path.split(element['sg_relative_path'])
+        rel_path = element['sg_relative_path']
+
+        if reduce_paths:
+            for pattern, replacement in REDUCTIONS:
+                rel_path = re.sub(pattern, replacement, rel_path, flags=re.IGNORECASE)
+
+        dir_, file_name = os.path.split(rel_path)
 
         base_name, ext = os.path.splitext(file_name)
         new_dirs = os.path.join(dst_root, dir_)
@@ -73,7 +88,7 @@ def main():
     parser.add_argument('root')
     args = parser.parse_args()
 
-    if (args.symlink and args.hardlink) or not (args.symlink or args.hardlink):
+    if not args.dry_run and ((args.symlink and args.hardlink) or not (args.symlink or args.hardlink)):
         print("Please pick one of --hardlink or --symlink.")
         exit(1)
 
