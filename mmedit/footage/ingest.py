@@ -64,14 +64,18 @@ def create_element_set(set_data, element_data, sgfs):
         'project': set_data['project'],
     })
 
-    for item in element_data: 
-        create_element(element_set, item, sg)
+    _create_elements_in_set(sg, element_set, element_data)
 
     sg.update('$ElementSet', element_set['id'], set_data)
 
     return element_set
 
-    
+
+def _create_elements_in_set(sg, element_set, element_data):
+    for item in element_data: 
+        create_element(element_set, item, sg)
+
+
 def guess_type(path):
     """What type of element is this?
 
@@ -87,16 +91,25 @@ def guess_type(path):
 def main():
 
     parser = argparse.ArgumentParser()
+
     parser.add_argument('--name',
         help="Defaults to basename of directory to ingest.")
     parser.add_argument('-P', '--project',
         help="Project (path, URL, or ID).")
+
+    parser.add_argument('-f', '--force', action='store_true',
+        help="Force creating a new ElementSet if this has already been ingested.")
+    parser.add_argument('-u', '--update', action='store_true',
+        help="Update this element set instead of creating a new one.")
+
     parser.add_argument('-y', '--yes', action='store_true',
         help="Don't ask for permission.")
     parser.add_argument('-n', '--dry-run', action='store_true',
         help="Don't actually do anything; preview in the ingest.")
+
     parser.add_argument('root',
         help="Directory of footage to ingest.")
+
     args = parser.parse_args()
 
     # Normalize arguments.
@@ -105,6 +118,7 @@ def main():
     sgfs = SGFS()
     sg = sgfs.session
 
+    existing_elements = set()
     element_specs = []
     data = {}
 
@@ -122,8 +136,23 @@ def main():
             exit(2)
         project = projects[0]
 
+    # Find an existing ElementSet.
+    element_set = sg.find_one('$ElementSet', [
+        ('sg_path', 'is', args.root),
+    ], ['project'])
+    if args.update:
+        if not element_set:
+            print("Could not find existing ElementSet at:", args.root)
+            exit(4)
+        for element in sg.find('Element', [('sg_element_set', 'is', element_set)], ['sg_relative_path']):
+            existing_elements.add(element['sg_relative_path'])
+    else:
+        if element_set and not args.force:
+            print("There is already an ElementSet here!")
+            print("Update it with --update, or force creation with --force (if you are REALLY sure).")
+            exit(5)
 
-    print("Importing the following...")
+    print("Scanning for footage...")
 
     for dir_path, _, file_names in os.walk(args.root, topdown=True):
         for name in file_names:
@@ -136,7 +165,11 @@ def main():
             rel_path = os.path.relpath(abs_path, args.root)
             filename, _ = os.path.splitext(name)  
 
-            print('%7s %s' % (type_, rel_path))
+            # If we are updating, and already have this one, skip it.
+            if rel_path in existing_elements:
+                continue
+
+            print('[%7s] %s' % (type_, rel_path))
 
             element_specs.append({
                 'code': filename,
@@ -146,19 +179,27 @@ def main():
                 'sg_relative_path': rel_path,
             })
 
+    if not element_specs:
+        print("Nothing to ingest.")
+        exit(0)
+
     # Get the user's permission to go ahead.
     if not args.yes:
-        answer = raw_input("Do you want to import this footage? [Y or n?] ")
-        if not answer.strip().lower() == "y":
+        answer = raw_input("Do you want to import this footage? [Yn] ")
+        if answer.strip().lower() not in ('yes', 'y', ''):
             exit(3)
 
     if not args.dry_run:
-        element_code = create_element_set({
-            'code': args.name or os.path.basename(args.root),
-            'sg_path': args.root,
-            'project': project,
-        }, element_specs, sgfs)
-        element_code_id = element_code['id']
+
+        if args.update:
+            _create_elements_in_set(sgfs.session, element_set, element_specs)
+        else:
+            element_set = create_element_set({
+                'code': args.name or os.path.basename(args.root),
+                'sg_path': args.root,
+                'project': project,
+            }, element_specs, sgfs)
+            print(element_set['id'])
 
 
 
