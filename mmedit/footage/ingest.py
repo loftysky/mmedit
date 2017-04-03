@@ -13,7 +13,25 @@ from sgfs import SGFS
 from sgpublish import Publisher
 
 
-VALID_EXT = set(('.mp4', '.avi', '.mts', '.mov'))
+EXT_TO_TYPE = {
+
+    '.mp4':  'footage',
+    '.avi':  'footage',
+    '.mts':  'footage',
+    '.mov':  'footage',
+    '.mxf':  'footage',
+
+    '.jpg':  'image',
+    '.jpeg': 'image',
+    '.png':  'image',
+    '.tif':  'image',
+    '.tiff': 'image',
+
+    '.wav':  'audio',
+    '.aif':  'audio',
+    '.aiff': 'audio',
+
+}
 
 
 def create_element(element_set, data, sg):
@@ -54,11 +72,16 @@ def create_element_set(set_data, element_data, sgfs):
     return element_set
 
     
-def is_footage(path):
-    """Is the given path footage?"""
-    name, ext = os.path.splitext(os.path.basename(path))           
-    if ext.lower() in VALID_EXT and not name.startswith('.'):
-        return True
+def guess_type(path):
+    """What type of element is this?
+
+    Returns one of `"footage"`, `"image"`, `"audio"`, or `None`.
+
+    """
+    name, ext = os.path.splitext(os.path.basename(path))
+    if name.startswith('.'):
+        return
+    return EXT_TO_TYPE.get(ext.lower())
 
 
 def main():
@@ -105,18 +128,20 @@ def main():
     for dir_path, _, file_names in os.walk(args.root, topdown=True):
         for name in file_names:
             abs_path = os.path.join(dir_path, name)
-            if not is_footage(abs_path):
+            
+            type_ = guess_type(abs_path)
+            if not type_:
                 continue
 
             rel_path = os.path.relpath(abs_path, args.root)
             filename, _ = os.path.splitext(name)  
 
-            print(rel_path)
+            print('%7s %s' % (type_, rel_path))
 
             element_specs.append({
                 'code': filename,
                 'sg_uuid': str(uuid.uuid4()), # uuid4 is the random one.
-                'sg_type': 'footage',
+                'sg_type': type_,
                 'sg_path': abs_path,
                 'sg_relative_path': rel_path,
             })
