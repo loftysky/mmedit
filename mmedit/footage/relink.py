@@ -15,7 +15,7 @@ REDUCTIONS = (
 )
 
 
-def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, dry_run=False, verbose=False):
+def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, prefer_checksum=True, dry_run=False, verbose=False):
     """Create a heirarchy from a set of Elements that symlink to the originals."""
 
     dst_root = os.path.abspath(dst_root)
@@ -30,7 +30,7 @@ def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, dry_run=Fal
         return
 
     sg = elements[0].session
-    sg.fetch(elements, ['sg_path', 'sg_relative_path', 'sg_uuid'])
+    sg.fetch(elements, ['sg_path', 'sg_relative_path', 'sg_uuid', 'sg_checksum'])
 
     for element in elements:
 
@@ -51,7 +51,13 @@ def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, dry_run=Fal
             if e.errno != errno.EEXIST:
                 raise
 
-        dst_name = base_name + "_" + element['sg_uuid'][:8 ] + ext
+        # "x" is for checksum, and "u" for UUID; wanted to uses non-hex letters.
+        if prefer_checksum and element['sg_checksum']:
+            # Checksums are assumed to look like "md5:xxx" or "sha256:xxx".
+            dst_name = '%s_X%s%s' % (base_name, element['sg_checksum'].split(':')[-1][:8].upper(), ext)
+        else:
+            dst_name = '%s_U%s%s' % (base_name, element['sg_uuid'][:8].upper(), ext)
+
         dst_path = os.path.join(new_dirs, dst_name)
 
         src_path = element['sg_path']
@@ -78,6 +84,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('-u', '--prefer-uuid', action='store_true')
     parser.add_argument('-s', '--symlink', action='store_true')
     parser.add_argument('-H', '--hardlink', action='store_true')
 
@@ -102,7 +109,12 @@ def main():
         ('sg_element_set', 'is', element_set),
     ], ['sg_path', 'sg_relative_path', 'sg_uuid'])
 
-    relink(elements, args.root, use_symlinks=args.symlink, dry_run=args.dry_run, verbose=args.verbose)
+    relink(elements, args.root,
+        use_symlinks=args.symlink,
+        prefer_checksum=not args.prefer_uuid,
+        dry_run=args.dry_run,
+        verbose=args.verbose,
+    )
 
 
 
