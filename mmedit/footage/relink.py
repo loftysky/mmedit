@@ -9,10 +9,13 @@ from sgfs import SGFS
 
 
 REDUCTIONS = (
-    (r'/xdroot/', '/'),
+    # NOTE: The order here matters.
     (r'/clip/', '/'),
+    (r'/clips\d+/', '/'),
+    (r'/contents/', '/'),
     (r'/dcim/\d+\w*/', '/'),
-    (r'/dcim/', '/'),
+    (r'/dcim/', '/'), # Must be after other dcim line (so don't just sort this)
+    (r'/xdroot/', '/'),
 )
 
 
