@@ -36,7 +36,7 @@ dir_map.auto_add('''
 
 
 def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, prefer_checksum=True,
-    dry_run=False, update=False, update_over=False, verbose=False):
+    dry_run=False, update=False, replace=False, verbose=False):
 
     """Create a heirarchy from a set of Elements that symlink to the originals."""
 
@@ -92,9 +92,9 @@ def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, prefer_chec
                 continue
 
         if os.path.exists(dst_path):
-            if update_over:
+            if replace:
                 if verbose:
-                    print('    Destination already exists; removing it.')
+                    print('    Destination already exists; replacing it.')
                 if not dry_run:
                     os.unlink(dst_path)
             elif update:
@@ -132,7 +132,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-u', '--update', action='store_true',
         help="Allow updating of existing directories.")
-    parser.add_argument('-U', '--update-over', action='store_true',
+    parser.add_argument('-U', '--replace', action='store_true',
         help="Allow updating over existing files.")
     parser.add_argument('-n', '--dry-run', action='store_true')
 
@@ -163,10 +163,13 @@ def main():
             print("Could not parse element set:", args.entity)
         todo = [(element_set, args.root)]
 
+    can_continue = True
     for _, root in todo:
-        if not (args.update or args.update_over) and os.path.exists(root):
+        if not (args.update or args.replace) and os.path.exists(root):
             print("Root already exists:", root)
-            exit(1)
+            can_continue = False
+    if not can_continue:
+        exit(1)
 
     for element_set, root in todo:
         elements = sgfs.session.find('Element', [
@@ -178,7 +181,7 @@ def main():
             prefer_checksum=not args.prefer_uuid,
             dry_run=args.dry_run,
             update=args.update,
-            update_over=args.update_over,
+            replace=args.replace,
             verbose=args.verbose,
         )
 
