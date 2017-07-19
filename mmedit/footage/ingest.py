@@ -7,6 +7,10 @@ import uuid
 from sgfs import SGFS
 
 
+EXCLUDE_DIRS = set('''
+    __junk__
+'''.strip().split())
+
 EXT_TO_TYPE = {
 
     '.mp4':  'footage',
@@ -150,7 +154,11 @@ def main():
 
     print("Scanning for footage...")
 
-    for dir_path, _, file_names in os.walk(args.root, topdown=True):
+    for dir_path, dir_names, file_names in os.walk(args.root, topdown=True):
+
+        # Exclude some dirs (just __junk__ at this point).
+        dir_names[:] = [x for x in dir_names if x.lower() not in EXCLUDE_DIRS]
+
         for name in file_names:
             abs_path = os.path.join(dir_path, name)
             
