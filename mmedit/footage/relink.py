@@ -28,11 +28,11 @@ def makedirs(path):
 
 
 dir_map = DirMap()
-dir_map.auto_add('''
+dir_map.add_existing('''
     /Volumes/EditOnline/CWAF_S3/01_Raw_Source
     /Volumes/EDsource/Projects/ConfuciusWasAFoodieS3/footage/camera_originals
 '''.strip().split())
-dir_map.auto_add('''
+dir_map.add_existing('''
     /Volumes/EditOnline/CWAF_S3/02_0ptimized_Source
     /Volumes/EDsource/Projects/ConfuciusWasAFoodieS3/footage/source
 '''.strip().split())
@@ -85,7 +85,7 @@ def relink(elements, dst_root, use_symlinks=True, reduce_paths=True, prefer_chec
         dst_path = os.path.join(new_dirs, dst_name)
         
         src_path = element['sg_path']
-        src_path = dir_map.get(src_path)
+        src_path = dir_map(src_path)
 
         missing = not os.path.exists(src_path)
         if verbose or missing:
