@@ -4,15 +4,18 @@ import os
 import re
 import subprocess
 
+import psutil
+
 from .utils import makedirs, reduce_path, clean_path, add_render_arguments, iter_render_work, guess_type
 
 
-
-def submit(element, dst_path, **_):
-    print('mmedit-proxy encode', src_path, dst_path)
-
 def encode(src, dst):
-    return subprocess.call(['ffmpeg',
+
+    name, ext = os.path.splitext(dst)
+    salt = os.urandom(2).encode('hex')
+    tmp = name + '.encoding-' + salt + ext
+
+    ret = subprocess.call(['ffmpeg',
         '-y', # Overwrite.
         '-i', src,
         '-c:v', 'prores_ks',
@@ -21,9 +24,16 @@ def encode(src, dst):
         '-vendor', 'ap10', # Mimick QuickTime.
         '-pix_fmt', 'yuv422p10le',
         '-s', '1920x1080',
-        '-threads', '0', # All threads.
-        dst
-    ])     
+        '-threads', str(psutil.cpu_count()), # All threads.
+        tmp
+    ])
+
+    if ret:
+        os.rename(tmp, name + '.failed-' + salt + ext)
+    else:
+        os.rename(tmp, dst)
+
+    return ret
 
 
 def main():
