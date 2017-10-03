@@ -89,11 +89,16 @@ def unique_name(path, element, prefer_checksum=False):
 def add_render_arguments(parser):
 
     parser.add_argument('--prefer-uuid', action='store_true')
+    parser.add_argument('--ignore-uuid', action='store_true')
+
     parser.add_argument('-s', '--symlink', action='store_true')
     parser.add_argument('-H', '--hardlink', action='store_true')
 
     parser.add_argument('-a', '--all', action='store_true',
         help="Relink all element sets in the given project.")
+
+    parser.add_argument('-t', '--type', action='append', dest='types', choices=('footage', 'image', 'audio'),
+        help="Only process the given type.")
 
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-u', '--update', action='store_true',
@@ -139,7 +144,7 @@ def iter_render_work(entity, root, all=False, update=False, replace=False,
     for element_set, root in todo:
         elements = sgfs.session.find('Element', [
             ('sg_element_set', 'is', element_set),
-        ], ['sg_path', 'sg_relative_path', 'sg_uuid', 'sg_checksum'])
+        ], ['sg_path', 'sg_relative_path', 'sg_uuid', 'sg_checksum', 'sg_type'])
         for x in _iter_render_work(elements, root,
             update=update,
             replace=replace,
@@ -149,7 +154,8 @@ def iter_render_work(entity, root, all=False, update=False, replace=False,
 
 
 def _iter_render_work(elements, root, reduce_paths=True, prefer_uuid=False,
-    verbose=False, dry_run=False, **_
+    ignore_uuid=False, update=False, replace=False, verbose=False,
+    dry_run=False, types=None, **_
 ):
 
     root = os.path.abspath(root)
@@ -164,10 +170,16 @@ def _iter_render_work(elements, root, reduce_paths=True, prefer_uuid=False,
         return
 
     sg = elements[0].session
-    sg.fetch(elements, ['sg_path', 'sg_relative_path', 'sg_uuid', 'sg_checksum'])
+    sg.fetch(elements, ['sg_path', 'sg_relative_path', 'sg_uuid', 'sg_type', 'sg_checksum'])
 
     for element in elements:
 
+        if types and element['sg_type'] not in types:
+            continue
+
+        if ignore_uuid and not element['sg_checksum']:
+            return
+        
         rel_path = element['sg_relative_path']
         if reduce_paths:
             rel_path = reduce_path(rel_path)
