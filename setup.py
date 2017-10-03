@@ -18,7 +18,9 @@ setup(
 
             mmedit-ingest = mmedit.footage.ingest:main
             mmedit-relink = mmedit.footage.relink:main
-
+            mmedit-checksum = mmedit.footage.checksum:main
+            mmedit-proxy = mmedit.footage.proxy:main
+            
         ''',
     },
 

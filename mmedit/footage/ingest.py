@@ -6,30 +6,13 @@ import uuid
 
 from sgfs import SGFS
 
+from .utils import guess_type
+
 
 EXCLUDE_DIRS = set('''
     __junk__
 '''.strip().split())
 
-EXT_TO_TYPE = {
-
-    '.mp4':  'footage',
-    '.avi':  'footage',
-    '.mts':  'footage',
-    '.mov':  'footage',
-    '.mxf':  'footage',
-
-    '.jpg':  'image',
-    '.jpeg': 'image',
-    '.png':  'image',
-    '.tif':  'image',
-    '.tiff': 'image',
-
-    '.wav':  'audio',
-    '.aif':  'audio',
-    '.aiff': 'audio',
-
-}
 
 
 def create_element(element_set, data, sg):
@@ -72,18 +55,6 @@ def create_element_set(set_data, element_data, sgfs):
 def _create_elements_in_set(sg, element_set, element_data):
     for item in element_data: 
         create_element(element_set, item, sg)
-
-
-def guess_type(path):
-    """What type of element is this?
-
-    Returns one of `"footage"`, `"image"`, `"audio"`, or `None`.
-
-    """
-    name, ext = os.path.splitext(os.path.basename(path))
-    if name.startswith('.'):
-        return
-    return EXT_TO_TYPE.get(ext.lower())
 
 
 def main():
