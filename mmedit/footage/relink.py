@@ -28,7 +28,7 @@ dir_map.add_existing('''
 '''.strip().split())
 
 
-def relink(element, dst_path, use_symlinks=True, dry_run=False, update=False,
+def relink(element, dst_path, symlink, dry_run=False, update=False,
     replace=False, verbose=False, **_
 ):
 
@@ -40,26 +40,28 @@ def relink(element, dst_path, use_symlinks=True, dry_run=False, update=False,
         print('%s -> %s' % (dst_path, src_path))
         if missing:
             print('    Source is missing; skipping it.')
-            continue
+            return
 
     if dry_run:
-        continue
+        return
 
     if os.path.exists(dst_path):
         if replace:
             os.unlink(dst_path)
         elif update:
             # Ignoring this file.
-            continue
+            return
 
     try:
-        if use_symlinks:
+        if symlink:
             os.symlink(src_path, dst_path)
         else:
             os.link(src_path, dst_path)
     except OSError as e:
         if errno != errno.EEXIST:
             raise
+
+    return True
 
 
 def main():
