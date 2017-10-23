@@ -1,5 +1,6 @@
 from __future__ import print_function 
 
+import json
 import os
 import re
 import subprocess
@@ -9,25 +10,58 @@ import psutil
 from .utils import makedirs, reduce_path, clean_path, add_render_arguments, iter_render_work, guess_type
 
 
-def encode(src, dst):
+def encode(src, dst, verbose=False, dry_run=False):
 
     name, ext = os.path.splitext(dst)
     salt = os.urandom(2).encode('hex')
     tmp = name + '.encoding-' + salt + ext
+    
+    cmd = [
+        'ffprobe',
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_streams',
+        src
+    ]
+    if verbose:
+        print('$', ' '.join(cmd))
+    probe = json.loads(subprocess.check_output(cmd))
 
-    ret = subprocess.call(['ffmpeg',
+    has_video = False
+    cmd = ['ffmpeg',
         '-y', # Overwrite.
         '-i', src,
-        '-c:v', 'prores_ks',
-        '-profile:v', '0', # Proxy.
-        '-qscale:v', '9', # 0 is best, 32 is worst.
         '-vendor', 'ap10', # Mimick QuickTime.
-        '-pix_fmt', 'yuv422p10le',
-        '-s', '1920x1080',
         '-threads', str(psutil.cpu_count()), # All threads.
-        tmp
-    ])
+        '-c', 'copy', # The default.
+    ]
+    for stream in probe['streams']:
+        i = stream['index']
+        type_ = stream['codec_type']
+        if type_ not in ('video', 'audio'):
+            continue
+        cmd.extend(('-map', '0:{}'.format(i)))
+        if type_ == 'video':
+            has_video = True
+            cmd.extend(('-c:{}'.format(i), 'prores_ks'))
 
+    if has_video:
+        cmd.extend((
+            '-profile:v', '0', # Proxy.
+            '-qscale:v', '9', # 0 is best, 32 is worst.
+            '-vendor', 'ap10', # Mimick QuickTime.
+            '-pix_fmt', 'yuv422p10le',
+            '-s', '1920x1080',
+        ))
+
+    cmd.append(tmp)
+    if verbose:
+        print('$', ' '.join(cmd))
+
+    if dry_run:
+        return
+    
+    ret = subprocess.call(cmd)
     if ret:
         os.rename(tmp, name + '.failed-' + salt + ext)
     else:
@@ -47,6 +81,8 @@ def main():
     add_render_arguments(submit_parser)
 
     encode_parser = commands.add_parser('encode')
+    encode_parser.add_argument('-v', '--verbose', action='store_true')
+    encode_parser.add_argument('-n', '--dry-run', action='store_true')
     encode_parser.add_argument('src')
     encode_parser.add_argument('dst')
 
@@ -89,7 +125,7 @@ def main_submit(args):
     client.submit(name='Proxies', jobs=[job])
 
 def main_encode(args):
-    return encode(args.src, args.dst)
+    return encode(src=args.src, dst=args.dst, verbose=args.verbose, dry_run=args.dry_run)
 
 
 
