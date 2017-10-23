@@ -1,6 +1,5 @@
 from __future__ import print_function 
 
-import json
 import os
 import re
 import subprocess
@@ -16,45 +15,22 @@ def encode(src, dst, verbose=False, dry_run=False):
     salt = os.urandom(2).encode('hex')
     tmp = name + '.encoding-' + salt + ext
     
-    cmd = [
-        'ffprobe',
-        '-v', 'quiet',
-        '-print_format', 'json',
-        '-show_streams',
-        src
-    ]
-    if verbose:
-        print('$', ' '.join(cmd))
-    probe = json.loads(subprocess.check_output(cmd))
-
-    has_video = False
     cmd = ['ffmpeg',
         '-y', # Overwrite.
         '-i', src,
+        '-map', '0:v',
+        '-c:v', 'prores_ks',
+        '-profile:v', '0', # Proxy.
+        '-qscale:v', '9', # 0 is best, 32 is worst.
+        '-pix_fmt', 'yuv422p10le',
+        '-s', '1920x1080',
+        '-map', '0:a',
+        '-c:a', 'copy',
         '-vendor', 'ap10', # Mimick QuickTime.
         '-threads', str(psutil.cpu_count()), # All threads.
-        '-c', 'copy', # The default.
+        tmp
     ]
-    for stream in probe['streams']:
-        i = stream['index']
-        type_ = stream['codec_type']
-        if type_ not in ('video', 'audio'):
-            continue
-        cmd.extend(('-map', '0:{}'.format(i)))
-        if type_ == 'video':
-            has_video = True
-            cmd.extend(('-c:{}'.format(i), 'prores_ks'))
 
-    if has_video:
-        cmd.extend((
-            '-profile:v', '0', # Proxy.
-            '-qscale:v', '9', # 0 is best, 32 is worst.
-            '-vendor', 'ap10', # Mimick QuickTime.
-            '-pix_fmt', 'yuv422p10le',
-            '-s', '1920x1080',
-        ))
-
-    cmd.append(tmp)
     if verbose:
         print('$', ' '.join(cmd))
 
