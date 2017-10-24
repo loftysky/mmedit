@@ -1,5 +1,6 @@
 from __future__ import print_function 
 
+import json
 import os
 import re
 import subprocess
@@ -9,27 +10,47 @@ import psutil
 from .utils import makedirs, reduce_path, clean_path, add_render_arguments, iter_render_work, guess_type
 
 
+
 def encode(src, dst, verbose=False, dry_run=False):
 
     name, ext = os.path.splitext(dst)
     salt = os.urandom(2).encode('hex')
     tmp = name + '.encoding-' + salt + ext
     
+    cmd = [
+        'ffprobe',
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_streams',
+        src
+    ]
+    if verbose:
+        print('$', ' '.join(cmd))
+    probe = json.loads(subprocess.check_output(cmd))
+    has_video = any(s['codec_type'] == 'video' for s in probe['streams'])
+    has_audio = any(s['codec_type'] == 'audio' for s in probe['streams'])
+
     cmd = ['ffmpeg',
         '-y', # Overwrite.
         '-i', src,
-        '-map', '0:v',
-        '-c:v', 'prores_ks',
-        '-profile:v', '0', # Proxy.
-        '-qscale:v', '9', # 0 is best, 32 is worst.
-        '-pix_fmt', 'yuv422p10le',
-        '-s', '1920x1080',
-        '-map', '0:a',
-        '-c:a', 'copy',
         '-vendor', 'ap10', # Mimick QuickTime.
         '-threads', str(psutil.cpu_count()), # All threads.
-        tmp
     ]
+    if has_video:
+        cmd.extend((
+            '-map', '0:v',
+            '-c:v', 'prores_ks',
+            '-profile:v', '0', # Proxy.
+            '-qscale:v', '9', # 0 is best, 32 is worst.
+            '-pix_fmt', 'yuv422p10le',
+            '-s', '1920x1080',
+        ))
+    if has_audio:
+        cmd.extend((
+            '-map', '0:a',
+            '-c:a', 'copy',
+        ))
+    cmd.append(tmp)
 
     if verbose:
         print('$', ' '.join(cmd))
@@ -38,7 +59,7 @@ def encode(src, dst, verbose=False, dry_run=False):
         return
     
     ret = subprocess.call(cmd)
-    if ret:
+    if ret and os.path.exists(tmp):
         os.rename(tmp, name + '.failed-' + salt + ext)
     else:
         os.rename(tmp, dst)
