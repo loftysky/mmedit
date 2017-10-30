@@ -127,7 +127,10 @@ def iter_render_work(entity, root, all=False, update=False, replace=False,
     else:
         element_set = sgfs.parse_user_input(entity, ['CustomEntity27'])
         if not element_set:
-            print("Could not parse element set:", entity)
+            raise ValueError("Could not parse element set:", entity)
+        if element_set['type'] != 'CustomEntity27':
+            raise ValueError("Given entity is not an ElementSet.", element_set)
+
         todo = [(element_set, root)]
 
     can_continue = True
