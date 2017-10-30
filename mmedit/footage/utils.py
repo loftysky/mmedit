@@ -91,9 +91,6 @@ def add_render_arguments(parser):
     parser.add_argument('--prefer-uuid', action='store_true')
     parser.add_argument('--ignore-uuid', action='store_true')
 
-    parser.add_argument('-s', '--symlink', action='store_true')
-    parser.add_argument('-H', '--hardlink', action='store_true')
-
     parser.add_argument('-a', '--all', action='store_true',
         help="Relink all element sets in the given project.")
 

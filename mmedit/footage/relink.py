@@ -69,6 +69,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--symlink', action='store_true')
+    parser.add_argument('-H', '--hardlink', action='store_true')
     add_render_arguments(parser)
     args = parser.parse_args()
 
