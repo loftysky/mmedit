@@ -26,21 +26,27 @@ def do_one(element_id, path, name='md5'):
     assert element['sg_path'] == path
     assert not element['sg_checksum']
 
-    print hasher.hexdigest(), path
+    print '{} {}'.format(hasher.hexdigest(), path)
     sg.update('Element', element_id, {'sg_checksum': '%s:%s' % (name, hasher.hexdigest())})
 
 
 def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--threads', type=int, default=8)
+    args = parser.parse_args()
 
     sg = Session()
     work = []
     for element in sg.find('Element', [('sg_checksum', 'is', '')], ['code', 'sg_path']):
         path = element['sg_path']
         if path and os.path.exists(path):
-            print element['code'], element['sg_path']
+            # print element['code'], element['sg_path']
             work.append((element['id'], element['sg_path']))
 
-    executor = ThreadPoolExecutor(5) #farmsoup.queue.Queue()
+    print 'Calculating checksums for {} files...'.format(len(work))
+    
+    executor = ThreadPoolExecutor(args.threads)
     executor.map(do_one, *zip(*work))
 
 
