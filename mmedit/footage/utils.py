@@ -154,7 +154,7 @@ def iter_render_work(entity, root, all=False, update=False, replace=False,
 
 
 def _iter_render_work(elements, root, reduce_paths=True, prefer_uuid=False,
-    ignore_uuid=False, update=False, replace=False, verbose=False,
+    ignore_uuid=False, update=False, replace=False, generate_path=None, verbose=False,
     dry_run=False, types=None, **_
 ):
 
@@ -187,6 +187,10 @@ def _iter_render_work(elements, root, reduce_paths=True, prefer_uuid=False,
         rel_path = unique_name(rel_path, element, prefer_checksum=not prefer_uuid)
 
         path = os.path.join(root, rel_path)
+        if generate_path:
+            path = generate_path(element, path)
+            if not path:
+                continue
         dir_ = os.path.dirname(path)
 
         if not dry_run:

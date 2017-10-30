@@ -98,9 +98,11 @@ def main_submit(args):
     from farmsoup.client.models import Job
 
     todo = []
-    for element, dst_path in iter_render_work(**args.__dict__):
+    for element, dst_path in iter_render_work(
+        generate_path=lambda el, dst_path: os.path.splitext(dst_path)[0] + '.mov',
+        **args.__dict__
+    ):
         src_path = element['sg_path']
-        dst_path = os.path.splitext(dst_path)[0] + '.mov'
         if args.verbose:
             print(dst_path, '<-', src_path)
         todo.append((src_path, dst_path))
@@ -118,6 +120,10 @@ def main_submit(args):
         task.package['args'].extend((src, dst))
         task.name = dst
         job.tasks.append(task)
+
+    if not len(job.tasks):
+        print("Nothing to submit.")
+        return
 
     client.submit(name='Proxies', jobs=[job])
 
