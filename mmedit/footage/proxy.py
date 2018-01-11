@@ -50,7 +50,7 @@ def encode(src, dst, verbose=False, dry_run=False):
             cmd.extend((
                 '-map', '0:v',
                 '-c:v', 'dnxhd',
-                '-pix_fmt', 'yuv422',
+                '-pix_fmt', 'yuv422p',
                 '-b:v', '36Mb', # NOTE: This is only for 23.976.
                 '-s', '1920x1080',
             ))
