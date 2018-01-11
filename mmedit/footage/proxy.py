@@ -51,7 +51,7 @@ def encode(src, dst, verbose=False, dry_run=False):
                 '-map', '0:v',
                 '-c:v', 'dnxhd',
                 '-pix_fmt', 'yuv422p',
-                '-b:v', '36Mb', # NOTE: This is only for 23.976.
+                '-b:v', '36M', # NOTE: This is only for 23.976.
                 '-s', '1920x1080',
             ))
         else:
