@@ -37,14 +37,26 @@ def encode(src, dst, verbose=False, dry_run=False):
         '-threads', str(psutil.cpu_count()), # All threads.
     ]
     if has_video:
-        cmd.extend((
-            '-map', '0:v',
-            '-c:v', 'prores_ks',
-            '-profile:v', '0', # Proxy.
-            '-qscale:v', '9', # 0 is best, 32 is worst.
-            '-pix_fmt', 'yuv422p10le',
-            '-s', '1920x1080',
-        ))
+        if ext == '.mov':
+            cmd.extend((
+                '-map', '0:v',
+                '-c:v', 'prores_ks',
+                '-profile:v', '0', # Proxy.
+                '-qscale:v', '9', # 0 is best, 32 is worst.
+                '-pix_fmt', 'yuv422p10le',
+                '-s', '1920x1080',
+            ))
+        elif ext == '.mxf':
+            cmd.extend((
+                '-map', '0:v',
+                '-c:v', 'dnxhd',
+                '-pix_fmt', 'yuv422',
+                '-b:v', '36Mb', # NOTE: This is only for 23.976.
+                '-s', '1920x1080',
+            ))
+        else:
+            raise ValueError('Extension not mov or mxf.', container)
+
     if has_audio:
         cmd.extend((
             '-map', '0:a',
@@ -75,6 +87,9 @@ def main():
     commands = parser.add_subparsers(dest='_command')
 
     submit_parser = commands.add_parser('submit')
+    submit_parser.add_argument('-f', '--format', choices=('mov', 'mxf'),
+        default='mov',
+        help='mov => ProRes, mxf => DNxHD')
     add_render_arguments(submit_parser)
 
     encode_parser = commands.add_parser('encode')
@@ -99,7 +114,7 @@ def main_submit(args):
 
     todo = []
     for element, dst_path in iter_render_work(
-        generate_path=lambda el, dst_path: os.path.splitext(dst_path)[0] + '.mov',
+        generate_path=lambda el, dst_path: os.path.splitext(dst_path)[0] + '.' + args.format,
         **args.__dict__
     ):
         src_path = element['sg_path']
@@ -109,6 +124,8 @@ def main_submit(args):
 
     if args.dry_run:
         return
+
+    new_args = ['mmedit-proxy', 'encode']
 
     client = Client()
     job = client.job(
