@@ -97,6 +97,8 @@ def main():
     commands = parser.add_subparsers(dest='_command')
 
     submit_parser = commands.add_parser('submit')
+    submit_parser.add_argument('-p', '--postfix', default='',
+        help='Extra text to add to end of name.')
     submit_parser.add_argument('-f', '--format', choices=('mov', 'mxf'),
         default='mov',
         help='mov => ProRes, mxf => DNxHD')
@@ -124,7 +126,7 @@ def main_submit(args):
 
     todo = []
     for element, dst_path in iter_render_work(
-        generate_path=lambda el, dst_path: os.path.splitext(dst_path)[0] + '.' + args.format,
+        generate_path=lambda el, dst_path: os.path.splitext(dst_path)[0] + args.postfix + '.' + args.format,
         **args.__dict__
     ):
         src_path = element['sg_path']
@@ -135,13 +137,12 @@ def main_submit(args):
     if args.dry_run:
         return
 
-    new_args = ['mmedit-proxy', 'encode']
-
     client = Client()
     job = client.job(
         name='Proxies',
     ).setup_as_subprocess(['mmedit-proxy', 'encode'])
     template = job.tasks.pop(0)
+
     for src, dst in todo:
         task = template.copy()
         task.package['args'].extend((src, dst))
