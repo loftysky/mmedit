@@ -59,8 +59,18 @@ def encode(src, dst, verbose=False, dry_run=False):
 
     if has_audio:
         cmd.extend((
+
             '-map', '0:a',
             '-c:a', 'copy',
+
+            # Premiere will only recognize tracks marked "default" if any are
+            # marked default. The footage has no tracks default, so it seems
+            # to work fine. FFmpeg appears to set the first one to default, and
+            # so it is the only one to be recognized. Apple's Compressor marks
+            # them ALL as default, which Premiere is also happy with. FFmpeg
+            # does not seem to let us have no default audio, so we set them all.
+            '-disposition:a', 'default',
+
         ))
     cmd.append(tmp)
 
