@@ -15,7 +15,7 @@ EXCLUDE_DIRS = set('''
 
 
 
-def create_element(element_set, data, sg):
+def create_element(element_set, data, sg, verbose=False):
     '''Creates a single Element on Shotgun.
 
     TODO (later):
@@ -29,13 +29,20 @@ def create_element(element_set, data, sg):
     data = data.copy()
     data['sg_element_set'] = element_set
     data['project'] = element_set["project"]
+
+    if verbose:
+        print('Creating Element:', data.get('code'))
+
     sg.create('Element', data)
 
 
-def create_element_set(set_data, element_data, sgfs):
+def create_element_set(set_data, element_data, sgfs, verbose=False):
     '''Creates an ElementSet with a set of Elements on Shotgun.'''
 
     sg = sgfs.session
+
+    if verbose:
+        print('Creating ElementSet:', set_data.get('code'))
 
     # Create a placeholder; we need something to link our Element(s) against,
     # but want it to look incomplete until it is not.
@@ -45,16 +52,16 @@ def create_element_set(set_data, element_data, sgfs):
         'project': set_data['project'],
     })
 
-    _create_elements_in_set(sg, element_set, element_data)
+    _create_elements_in_set(sg, element_set, element_data, verbose=verbose)
 
     sg.update('$ElementSet', element_set['id'], set_data)
 
     return element_set
 
 
-def _create_elements_in_set(sg, element_set, element_data):
+def _create_elements_in_set(sg, element_set, element_data, verbose=False):
     for item in element_data: 
-        create_element(element_set, item, sg)
+        create_element(element_set, item, sg, verbose=verbose)
 
 
 def main():
@@ -77,6 +84,7 @@ def main():
         help="Don't ask for permission.")
     parser.add_argument('-n', '--dry-run', action='store_true',
         help="Don't actually do anything; preview in the ingest.")
+    parser.add_argument('-v', '--verbose', action='store_true')
 
     parser.add_argument('root',
         help="Directory of footage to ingest.")
@@ -167,13 +175,13 @@ def main():
     if not args.dry_run:
 
         if args.update:
-            _create_elements_in_set(sgfs.session, element_set, element_specs)
+            _create_elements_in_set(sgfs.session, element_set, element_specs, verbose=args.verbose)
         else:
             element_set = create_element_set({
                 'code': args.name or os.path.basename(args.root),
                 'sg_path': args.root,
                 'project': project,
-            }, element_specs, sgfs)
+            }, element_specs, sgfs, verbose=args.verbose)
             print(element_set['id'])
 
 
