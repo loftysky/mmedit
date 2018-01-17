@@ -110,13 +110,25 @@ def main():
     encode_parser.add_argument('src')
     encode_parser.add_argument('dst')
 
+    swap_parser = commands.add_parser('swap')
+    swap_parser.add_argument('-b', '--backup', help='Postfix for existing footage.')
+    swap_parser.add_argument('-n', '--dry-run', action='store_true')
+    swap_parser.add_argument('-f', '--force', action='store_true')
+    swap_parser.add_argument('postfix')
+    swap_parser.add_argument('root')
+
+
     args = parser.parse_args()
 
     if args._command == 'submit':
         args.types = args.types or ['footage']
         exit(main_submit(args) or 0)
-    else:
+    elif args._command == 'encode':
         exit(main_encode(args) or 0)
+    elif args._command == 'swap':
+        exit(main_swap(args) or 0)
+    else:
+        raise RuntimeError('Unknown command.', args._command)
 
 
 def main_submit(args):
@@ -158,7 +170,34 @@ def main_submit(args):
 def main_encode(args):
     return encode(src=args.src, dst=args.dst, verbose=args.verbose, dry_run=args.dry_run)
 
+def main_swap(args):
 
+    root = os.path.abspath(args.root)
+    for dir_path, dir_names, file_names in os.walk(root):
+        for name in file_names:
+
+            if name.startswith('.'):
+                continue
+
+            base, ext = os.path.splitext(name)
+            if not base.endswith(args.postfix):
+                continue
+            bare = base[:-len(args.postfix)]
+
+            old = os.path.join(dir_path, name)
+            new = os.path.join(dir_path, bare + ext)
+
+            if os.path.exists(new):
+                if args.backup:
+                    bak = os.path.join(dir_path, bare + args.backup + ext)
+                    print('{} -> {}'.format(new, bak))
+                    # os.rename(new, bak)
+                elif not args.force:
+                    print('{} already exists; overwrite with --force.'.format(new))
+                    continue
+            
+            print('{} <- {}'.format(new, old))
+            # os.rename(old, new)
 
 if __name__ == '__main__':
     main()
