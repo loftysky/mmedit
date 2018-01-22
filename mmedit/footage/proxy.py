@@ -191,13 +191,13 @@ def main_swap(args):
                 if args.backup:
                     bak = os.path.join(dir_path, bare + args.backup + ext)
                     print('{} -> {}'.format(new, bak))
-                    # os.rename(new, bak)
+                    os.rename(new, bak)
                 elif not args.force:
                     print('{} already exists; overwrite with --force.'.format(new))
                     continue
             
             print('{} <- {}'.format(new, old))
-            # os.rename(old, new)
+            os.rename(old, new)
 
 if __name__ == '__main__':
     main()
