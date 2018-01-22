@@ -44,7 +44,7 @@ def encode(src, dst, verbose=False, dry_run=False):
                 '-profile:v', '0', # Proxy.
                 '-qscale:v', '9', # 0 is best, 32 is worst.
                 '-pix_fmt', 'yuv422p10le',
-                '-s', '1920x1080',
+                '-vf', 'scale=1920:1080:force_original_aspect_ratio=increase',
             ))
         elif ext == '.mxf':
             cmd.extend((
