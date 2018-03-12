@@ -114,6 +114,7 @@ def main():
     swap_parser.add_argument('-b', '--backup', help='Postfix for existing footage.')
     swap_parser.add_argument('-n', '--dry-run', action='store_true')
     swap_parser.add_argument('-f', '--force', action='store_true')
+    swap_parser.add_argument('-g', '--grep')
     swap_parser.add_argument('postfix')
     swap_parser.add_argument('root')
 
@@ -182,9 +183,13 @@ def main_swap(args):
             base, ext = os.path.splitext(name)
             if not base.endswith(args.postfix):
                 continue
-            bare = base[:-len(args.postfix)]
-
+            
             old = os.path.join(dir_path, name)
+            
+            if args.grep and not re.search(args.grep, old):
+                continue
+            
+            bare = base[:-len(args.postfix)]
             new = os.path.join(dir_path, bare + ext)
 
             if os.path.exists(new):
