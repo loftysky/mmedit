@@ -153,6 +153,7 @@ def main_submit(args):
     client = Client()
     job = client.job(
         name='Proxies',
+        reservations={'nx01.bandwidth': 80},
     ).setup_as_subprocess(['mmedit-proxy', 'encode'])
     template = job.tasks.pop(0)
 
