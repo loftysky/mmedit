@@ -16,16 +16,15 @@ def makedirs(path):
         if e.errno != errno.EEXIST:
             raise
 
-
 dir_map = DirMap()
-dir_map.add_existing('''
-    /Volumes/EditOnline/CWAF_S3/01_Raw_Source
-    /Volumes/EDsource/Projects/ConfuciusWasAFoodieS3/footage/camera_originals
-'''.strip().split())
-dir_map.add_existing('''
-    /Volumes/EditOnline/CWAF_S3/02_0ptimized_Source
-    /Volumes/EDsource/Projects/ConfuciusWasAFoodieS3/footage/source
-'''.strip().split())
+dir_map.add_one(
+    '/Volumes/EditOnline/CWAF_S3/01_Raw_Source',
+    '/Volumes/EDsource/Projects/ConfuciusWasAFoodieS3/footage/camera_originals',
+)
+dir_map.add_one(
+    '/Volumes/EditOnline/CWAF_S3/02_0ptimized_Source',
+    '/Volumes/EDsource/Projects/ConfuciusWasAFoodieS3/footage/source',
+)
 
 
 def relink(element, dst_path, symlink, dry_run=False, update=False,
